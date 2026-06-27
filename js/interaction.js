@@ -1,10 +1,10 @@
-// interaction.js —— 每日多次抽签、心情记录（含最大发生次数限制）
+// interaction.js —— 每日多次抽签、心情记录（动态发生次数上限）
 
 import {
   loadData, saveData, getToday,
   canDrawNow, getTodayDrawCount,
   getTodayBaseProbability, getNextDrawProbability,
-  canOccurNow, getTodayOccurrenceCount
+  getTodayOccurrenceCount
 } from './utils.js';
 import { rouletteWheelSelect } from './weight.js';
 import { updateCompanion } from './companion.js';
@@ -33,7 +33,13 @@ function updateDrawStatus() {
   const count = getTodayDrawCount(data);
   const max = data.settings.maxDrawsPerDay;
   const occurCount = getTodayOccurrenceCount(data);
-  const occurMax = data.settings.maxOccurrencesPerDay ?? 3;
+
+  // 计算当天发生次数上限（动态）
+  const today = getToday();
+  const startDate = parseLocal(data.settings.startDate);
+  const dayNumber = Math.floor((parseLocal(today) - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  const P_base = getTodayBaseProbability(data.settings, dayNumber);
+  const occurMax = Math.max(1, Math.floor(P_base * data.settings.currentFrequency));
 
   if (canDraw.allowed) {
     el.textContent = `今日已决策 ${count}/${max} 次 · 已发生 ${occurCount}/${occurMax} 次 · 可抽签`;
@@ -61,8 +67,12 @@ async function handleDraw() {
     return;
   }
 
-  // ---------- 检查是否已达到每日最大发生次数 ----------
-  if (!canOccurNow(data)) {
+  // 动态检查发生次数上限
+  const occurCount = getTodayOccurrenceCount(data);
+  const P_base = getTodayBaseProbability(data.settings, dayNumber);
+  const occurMax = Math.max(1, Math.floor(P_base * data.settings.currentFrequency));
+  if (occurCount >= occurMax) {
+    // 已达上限，强制避免
     const decision = 'avoid';
     const logEntry = {
       dayNumber,
@@ -95,8 +105,7 @@ async function handleDraw() {
     return;
   }
 
-  // ---------- 正常抽签 ----------
-  const P_base = getTodayBaseProbability(data.settings, dayNumber);
+  // 正常抽签
   const todayLogs = data.dailyLogs[today] || [];
   const P_actual = getNextDrawProbability(P_base, todayLogs);
 

@@ -1,4 +1,4 @@
-// utils.js —— 通用工具函数（含每日最大发生次数限制，基于初始预计次数向下取整）
+// utils.js —— 通用工具函数（动态发生次数上限）
 
 // ==================== 本地日期工具 ====================
 function parseLocalDate(dateStr) {
@@ -27,8 +27,7 @@ export function loadData() {
     if (data.settings) {
       data.settings.drawIntervalMinutes = data.settings.drawIntervalMinutes ?? 15;
       data.settings.maxDrawsPerDay = data.settings.maxDrawsPerDay ?? calcDefaultMaxDraws(data.settings.currentFrequency);
-      data.settings.maxOccurrencesPerDay = data.settings.maxOccurrencesPerDay ??
-        calcDefaultMaxOccurrences(data.settings.currentFrequency, data.settings.probCurve?.P0);
+      // 不再存储固定的 maxOccurrencesPerDay，将使用动态计算
     }
     return data;
   } catch (e) { return null; }
@@ -113,13 +112,8 @@ export function canDrawNow(data) {
 }
 
 function calcDefaultMaxDraws(freq) {
-  return Math.max(4, Math.round(freq * 2));
-}
-
-/** 计算每日最大发生次数的默认值（基于初始预计次数向下取整） */
-export function calcDefaultMaxOccurrences(currentFreq, P0) {
-  const estimate = (P0 || 0.5) * currentFreq;
-  return Math.max(1, Math.floor(estimate));
+  // 默认抽签次数为频率的 1.5 倍，最少 4 次，最多 50 次
+  return Math.min(50, Math.max(4, Math.round(freq * 1.5)));
 }
 
 /** 获取今日已发生次数（决策为 do_habit） */
@@ -129,10 +123,11 @@ export function getTodayOccurrenceCount(data) {
   return logs.filter(l => l.decision === 'do_habit').length;
 }
 
-/** 检查是否还可以发生（未达到每日最大发生次数） */
-export function canOccurNow(data) {
+/** 检查是否还可以发生（动态上限：当天基准概率 × 当前频率，向下取整） */
+export function canOccurNow(data, dayNumber) {
   const count = getTodayOccurrenceCount(data);
-  const max = data.settings.maxOccurrencesPerDay ?? 3;
+  const P_base = getTodayBaseProbability(data.settings, dayNumber);
+  const max = Math.max(1, Math.floor(P_base * data.settings.currentFrequency));
   return count < max;
 }
 

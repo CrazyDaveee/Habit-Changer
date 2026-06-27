@@ -1,9 +1,9 @@
-// app.js —— 应用入口，路由与全局初始化（含最大发生次数限制）
+// app.js —— 应用入口，路由与全局初始化（动态发生次数上限）
 
 import {
   loadData, saveData, loadConfig, saveConfig,
   getSuggestions, normalizeDailyFreq, getToday, isDebug, advanceVirtualDate,
-  getTodayDrawCount, freqToProb, calcDefaultMaxOccurrences
+  getTodayDrawCount, freqToProb, getTodayBaseProbability
 } from './utils.js';
 import { calcDecayRate, renderProbabilityChart, renderCustomCurveChart } from './engine.js';
 import { createDefaultSubstitutePool, redistributeWeights, createCustomSubstitute } from './weight.js';
@@ -158,6 +158,18 @@ function switchView(viewId) {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === viewId);
   });
+
+  // 动态推荐抽签次数
+  if (viewId === 'viewSetup') {
+    const freqInput = document.getElementById('currentFreq');
+    const maxDrawsInput = document.getElementById('maxDraws');
+    const updateDefaults = () => {
+      const val = parseInt(freqInput.value) || 10;
+      if (maxDrawsInput) maxDrawsInput.value = Math.min(50, Math.max(4, Math.round(val * 1.5)));
+    };
+    freqInput?.addEventListener('input', updateDefaults);
+    updateDefaults();
+  }
 }
 
 function setupBottomNav() {
@@ -207,7 +219,6 @@ function handleSetupSubmit(e) {
     probCurve: { P0, Ptarget, k, totalDays },
     drawIntervalMinutes: drawInterval,
     maxDrawsPerDay: maxDraws,
-    maxOccurrencesPerDay: calcDefaultMaxOccurrences(dailyCurrent, P0),
     suggestionShown: true,
   };
 
@@ -309,6 +320,7 @@ function renderMainView(data) {
   const count = getTodayDrawCount(data);
   const max = settings.maxDrawsPerDay || 10;
   const counterEl = document.getElementById('drawCountDisplay');
+  // 简要显示，具体发生次数上限由 interaction 实时更新
   if (counterEl) counterEl.textContent = `今日已决策 ${count}/${max} 次`;
 
   if (data.customCurve) {
@@ -342,7 +354,6 @@ function showSettingsModal() {
   const data = loadData();
   const interval = data?.settings?.drawIntervalMinutes || 15;
   const maxDraws = data?.settings?.maxDrawsPerDay || 10;
-  const maxOccur = data?.settings?.maxOccurrencesPerDay ?? 3;
 
   content.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -356,10 +367,6 @@ function showSettingsModal() {
     <div class="form-group" style="margin-bottom:12px;">
       <label>每日最大抽签次数</label>
       <input type="number" id="maxDrawsInput" value="${maxDraws}" min="1" max="50" />
-    </div>
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>每日最多发生次数</label>
-      <input type="number" id="maxOccurInput" value="${maxOccur}" min="1" max="50" />
     </div>
     <button id="saveConfigBtn" class="btn primary" style="width:100%; margin-bottom:12px;">保存抽签配置</button>
     <hr style="margin:12px 0" />
@@ -375,14 +382,12 @@ function showSettingsModal() {
   document.getElementById('saveConfigBtn').addEventListener('click', () => {
     const intervalVal = parseInt(document.getElementById('intervalInput').value);
     const maxVal = parseInt(document.getElementById('maxDrawsInput').value);
-    const maxOccurVal = parseInt(document.getElementById('maxOccurInput').value);
-    if (isNaN(intervalVal) || isNaN(maxVal) || isNaN(maxOccurVal) || intervalVal < 1 || maxVal < 1 || maxOccurVal < 1) {
+    if (isNaN(intervalVal) || isNaN(maxVal) || intervalVal < 1 || maxVal < 1) {
       return alert('请输入有效数值');
     }
     const currentData = loadData();
     currentData.settings.drawIntervalMinutes = intervalVal;
     currentData.settings.maxDrawsPerDay = maxVal;
-    currentData.settings.maxOccurrencesPerDay = maxOccurVal;
     saveData(currentData);
     overlay.hidden = true;
     refreshMainView();
@@ -445,7 +450,7 @@ function showExpHelp() {
         <li>🌸 开花 (301-500)</li>
         <li>🍎 结果 (500+)</li>
       </ul>
-      <p style="font-size:0.9rem; color:var(--color-text-muted);">每天可多次决策，达到每日最多发生次数后将自动避免。</p>
+      <p style="font-size:0.9rem; color:var(--color-text-muted);">每天可多次决策，达到动态发生次数上限后将自动避免。</p>
     </div>
   `;
   overlay.hidden = false;
