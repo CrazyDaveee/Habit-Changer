@@ -34,7 +34,10 @@
 
 ### 1. 运行项目
 
-因为使用了 ES6 模块，需通过**本地服务器**打开（不能直接双击 `index.html`）。
+本页面已经托管到Github
+https://crazydaveee.github.io/Haibit-Changer/
+
+因为使用了 ES6 模块，若本地运行需通过**本地服务器**打开（不能直接双击 `index.html`）。
 
 - **VS Code**：安装 Live Server 扩展，右键 `index.html` → `Open with Live Server`。
 - **Python**：在项目根目录执行 `python -m http.server 8000`，浏览器访问 `http://localhost:8000`。
@@ -95,9 +98,6 @@
 ---
 
 ## 📦 部署上线
-
-本页面已经托管到Github
-https://crazydaveee.github.io/Haibit-Changer/
 
 本项目为纯静态页面，可部署到任何支持静态网站的托管服务：
 
