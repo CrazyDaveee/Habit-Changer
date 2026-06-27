@@ -96,6 +96,9 @@
 
 ## 📦 部署上线
 
+本页面已经托管到Github
+https://crazydaveee.github.io/Haibit-Changer/
+
 本项目为纯静态页面，可部署到任何支持静态网站的托管服务：
 
 - **GitHub Pages**：免费、简单，适合开发者。
