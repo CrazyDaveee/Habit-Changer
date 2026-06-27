@@ -96,7 +96,7 @@
           <form id="setupForm" class="setup-form">
             <div class="form-group">
               <label for="habitName">坏习惯名称</label>
-              <input type="text" id="habitName" placeholder="例如：咬指甲、刷短视频..." required />
+              <input type="text" id="habitName" placeholder="例如：打游戏、刷短视频、吃甜品..." required />
             </div>
             <div class="form-row">
               <div class="form-group">
@@ -121,9 +121,10 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="targetDays">目标天数</label>
-                <input type="number" id="targetDays" min="1" placeholder="天数" required />
+                <input type="number" id="targetDays" class="target-days-input" min="1" placeholder="天数" required />
               </div>
             </div>
+            <div id="suggestionBubble" class="bubble warning" hidden></div>
             <div class="form-row">
               <div class="form-group">
                 <label for="drawInterval">每次抽签间隔（分钟）</label>
@@ -134,7 +135,6 @@
                 <input type="number" id="maxDraws" value="10" min="1" max="50" />
               </div>
             </div>
-            <div id="suggestionBubble" class="bubble warning" hidden></div>
             <div style="display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap;">
               <button type="submit" class="btn primary">生成我的改变曲线 →</button>
               <button type="button" id="aiCurveSetupBtn" class="btn secondary">🤖 使用 AI 生成</button>

@@ -77,9 +77,11 @@ function updateSetupSuggestions() {
   const targetFreqUnit = document.getElementById('targetFreqUnit').value;
   const targetDays = parseInt(document.getElementById('targetDays').value);
   const bubble = document.getElementById('suggestionBubble');
+  const targetDaysInput = document.getElementById('targetDays');
 
   if (isNaN(currentFreq) || isNaN(targetFreq) || isNaN(targetDays)) {
     if (bubble) bubble.hidden = true;
+    if (targetDaysInput) targetDaysInput.classList.remove('input-warning');
     return;
   }
 
@@ -87,8 +89,11 @@ function updateSetupSuggestions() {
   if (suggestions.length && bubble) {
     bubble.innerHTML = suggestions.join('<br>');
     bubble.hidden = false;
+    // 目标天数输入框边框变为黄色
+    if (targetDaysInput) targetDaysInput.classList.add('input-warning');
   } else if (bubble) {
     bubble.hidden = true;
+    if (targetDaysInput) targetDaysInput.classList.remove('input-warning');
   }
 }
 
