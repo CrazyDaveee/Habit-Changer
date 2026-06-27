@@ -1,6 +1,6 @@
 //更新
 git add .
-git commit -m "加入智能建议"
+git commit -m "修复幼苗陪伴图标显示错误问题"
 git push
 
 //调试模式

@@ -130,7 +130,7 @@ function renderPlantUI(comp) {
   const plantDialogue = document.getElementById('plantDialogue');
   const expValue = document.getElementById('expValue');
 
-  const stageEmoji = { seed: '🌱', sprout: '🌿', seedling: '🪴', bloom: '🌸', fruit: '🍎' };
+  const stageEmoji = { seed: '🌱', sprout: '🌿', seedling: '🌲', bloom: '🌸', fruit: '🍎' };
 
   if (plantVisual) plantVisual.textContent = stageEmoji[comp.stage] || '🌱';
   if (plantDialogue && comp.currentDialogue) plantDialogue.textContent = comp.currentDialogue;
