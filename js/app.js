@@ -1,9 +1,9 @@
-// app.js —— 应用入口，路由与全局初始化（含 Welcome 引导、AI 曲线选项）
+// app.js —— 应用入口，路由与全局初始化（图表频率版）
 
 import {
   loadData, saveData, loadConfig, saveConfig,
   getSuggestions, normalizeDailyFreq, getToday, isDebug, advanceVirtualDate,
-  getTodayDrawCount
+  getTodayDrawCount, freqToProb
 } from './utils.js';
 import { calcDecayRate, renderProbabilityChart, renderCustomCurveChart } from './engine.js';
 import { createDefaultSubstitutePool, redistributeWeights, createCustomSubstitute } from './weight.js';
@@ -43,7 +43,7 @@ function initApp() {
   document.getElementById('settingsBtn')?.addEventListener('click', showSettingsModal);
   document.getElementById('expHelpIcon')?.addEventListener('click', showExpHelp);
 
-  // ---------- 设置向导中的 AI 曲线按钮 ----------
+  // 设置向导中的 AI 曲线按钮
   document.getElementById('aiCurveSetupBtn')?.addEventListener('click', () => {
     generatePrompt();
   });
@@ -89,7 +89,6 @@ function updateSetupSuggestions() {
   if (suggestions.length && bubble) {
     bubble.innerHTML = suggestions.join('<br>');
     bubble.hidden = false;
-    // 目标天数输入框边框变为黄色
     if (targetDaysInput) targetDaysInput.classList.add('input-warning');
   } else if (bubble) {
     bubble.hidden = true;
@@ -195,15 +194,14 @@ function handleSetupSubmit(e) {
 
   const dailyCurrent = normalizeDailyFreq(currentFreq, freqUnit);
   const dailyTarget = normalizeDailyFreq(targetFreq, targetFreqUnit);
-  const P0 = Math.min(0.95, 1 - 1 / (dailyCurrent + 1));
-  const Ptarget = Math.min(0.8, dailyTarget / (dailyCurrent || 1));
+  const P0 = freqToProb(dailyCurrent);
+  const Ptarget = freqToProb(dailyTarget);
   const totalDays = targetDays;
   const k = calcDecayRate(totalDays);
 
   const settings = {
     habitName,
     currentFrequency: dailyCurrent,
-    frequencyUnit: 'day',
     targetFrequency: dailyTarget,
     targetDays,
     startDate: getToday(),
@@ -217,7 +215,6 @@ function handleSetupSubmit(e) {
   data.settings = settings;
   if (!data.substitutes) data.substitutes = { items: createDefaultSubstitutePool(), totalWeight: 100 };
   data.dailyLogs = data.dailyLogs || {};
-  data.breakRecords = data.breakRecords || [];
   data.achievements = data.achievements || {};
   data.companion = data.companion || {
     experience: 0, level: 1, levelThresholds: [0, 51, 151, 301, 501],
@@ -315,10 +312,14 @@ function renderMainView(data) {
   if (counterEl) counterEl.textContent = `今日已决策 ${count}/${max} 次`;
 
   if (data.customCurve) {
-    renderCustomCurveChart('probChart', data.customCurve, dayNumber);
+    renderCustomCurveChart('probChart', data.customCurve, dayNumber, settings.currentFrequency);
   } else {
     const { P0, Ptarget, k, totalDays } = settings.probCurve;
-    renderProbabilityChart('probChart', { P0, Ptarget, totalDays, k, currentDay: dayNumber });
+    renderProbabilityChart('probChart', {
+      P0, Ptarget, totalDays, k,
+      currentDay: dayNumber,
+      currentFreq: settings.currentFrequency
+    });
   }
 
   initInteraction();
@@ -433,7 +434,7 @@ function showExpHelp() {
       <ul>
         <li>🌱 种子 (0-50)</li>
         <li>🌿 发芽 (51-150)</li>
-        <li>🌲 幼苗 (151-300)</li>
+        <li>🪴 幼苗 (151-300)</li>
         <li>🌸 开花 (301-500)</li>
         <li>🍎 结果 (500+)</li>
       </ul>

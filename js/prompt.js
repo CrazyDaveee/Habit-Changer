@@ -1,18 +1,12 @@
-// prompt.js —— AI 曲线生成 Prompt 与 JSON 解析（支持从表单读取）
+// prompt.js —— AI 曲线生成 Prompt 与 JSON 解析（统一使用 freqToProb）
 
-import { loadData, saveData, normalizeDailyFreq } from './utils.js';
+import { loadData, saveData, normalizeDailyFreq, freqToProb } from './utils.js';
 
-/**
- * 生成 AI 提示词
- * 优先使用已保存的 settings，否则从设置向导表单中读取
- */
 export function generatePrompt() {
-  // 尝试从 localStorage 获取已有设置
   const data = loadData();
   let freqCurrent, freqTarget, targetDays, P0, Ptarget;
 
   if (data?.settings) {
-    // 已有完整设置，直接使用
     const s = data.settings;
     freqCurrent = s.currentFrequency;
     freqTarget = s.targetFrequency;
@@ -20,7 +14,6 @@ export function generatePrompt() {
     P0 = s.probCurve.P0;
     Ptarget = s.probCurve.Ptarget;
   } else {
-    // 从表单读取（用户正在设置向导中）
     const currentFreq = parseInt(document.getElementById('currentFreq')?.value);
     const freqUnit = document.getElementById('freqUnit')?.value || 'day';
     const targetFreq = parseInt(document.getElementById('targetFreq')?.value);
@@ -34,10 +27,8 @@ export function generatePrompt() {
     freqCurrent = normalizeDailyFreq(currentFreq, freqUnit);
     freqTarget = normalizeDailyFreq(targetFreq, targetFreqUnit);
     targetDays = days;
-
-    // 根据用户输入近似计算 P0 和 Ptarget（与设置提交时算法一致）
-    P0 = Math.min(0.95, 1 - 1 / (freqCurrent + 1));
-    Ptarget = Math.min(0.8, freqTarget / (freqCurrent || 1));
+    P0 = freqToProb(freqCurrent);
+    Ptarget = freqToProb(freqTarget);
   }
 
   const prompt = `
@@ -56,7 +47,6 @@ export function generatePrompt() {
 要求概率值精确到小数点后4位，并按天数递增排列。
 `;
 
-  // 显示在模态框中
   const modalOverlay = document.getElementById('modalOverlay');
   const modalContent = document.getElementById('modalContent');
   modalContent.innerHTML = `
@@ -94,9 +84,6 @@ export function generatePrompt() {
   });
 }
 
-/**
- * 解析用户粘贴的 JSON 并覆盖概率曲线参数
- */
 function applyCustomCurve(jsonStr) {
   try {
     const parsed = JSON.parse(jsonStr);
@@ -106,7 +93,6 @@ function applyCustomCurve(jsonStr) {
 
     const data = loadData();
     if (!data?.settings) {
-      // 如果还没有 settings，提示用户先保存基本设置
       alert('请先完成基本设置（提交表单生成曲线），然后再应用自定义数据。');
       return;
     }
@@ -115,7 +101,6 @@ function applyCustomCurve(jsonStr) {
       days: parsed.days,
       probs: parsed.probs,
     };
-
     data.settings.probCurve.custom = true;
     saveData(data);
     alert('自定义曲线已应用！刷新主界面即可查看。');

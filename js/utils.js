@@ -1,4 +1,4 @@
-// utils.js —— 通用工具函数（建议前缀 ·，推荐天数下限21天）
+// utils.js —— 通用工具函数（概率-频率映射说明）
 
 // ==================== 本地日期工具 ====================
 function parseLocalDate(dateStr) {
@@ -21,9 +21,7 @@ export function loadData() {
     const data = JSON.parse(raw);
     if (data.dailyLogs) {
       for (const [date, val] of Object.entries(data.dailyLogs)) {
-        if (!Array.isArray(val)) {
-          data.dailyLogs[date] = [val];
-        }
+        if (!Array.isArray(val)) data.dailyLogs[date] = [val];
       }
     }
     if (data.settings) {
@@ -97,9 +95,7 @@ export function canDrawNow(data) {
   const today = getToday();
   const draws = (data.dailyLogs[today] || []).length;
   const max = data.settings.maxDrawsPerDay || 10;
-  if (draws >= max) {
-    return { allowed: false, reason: `今日抽签次数已达上限（${max}次）` };
-  }
+  if (draws >= max) return { allowed: false, reason: `今日抽签次数已达上限（${max}次）` };
 
   const interval = data.settings.drawIntervalMinutes || 15;
   const lastTime = getLastDrawTime(data);
@@ -111,7 +107,6 @@ export function canDrawNow(data) {
       return { allowed: false, reason: `请等待 ${remain} 分钟后再抽签（间隔 ${interval} 分钟）` };
     }
   }
-
   return { allowed: true };
 }
 
@@ -119,62 +114,56 @@ function calcDefaultMaxDraws(freq) {
   return Math.max(4, Math.round(freq * 2));
 }
 
+// ==================== 概率与频率的映射 ====================
+/**
+ * 频率 → 概率（用于初始化 P0 和抽签）
+ * 公式：P = 1 - 1/(freq + 1)，上限0.95
+ * 频率越高，单次冲动发生时执行习惯的概率越大
+ */
+export function freqToProb(freqPerDay) {
+  if (freqPerDay <= 0) return 0;
+  return Math.min(0.95, 1 - 1 / (freqPerDay + 1));
+}
+
+/**
+ * 图表显示：概率 × 初始每日频率 = 预测每日次数
+ * 这个乘法直接在 engine.js 中进行
+ */
+
 // ==================== 日内动态概率 ====================
 export function getTodayBaseProbability(settings, dayNumber) {
   const { P0, Ptarget, k } = settings.probCurve;
-  let prob = P0 * Math.exp(-k * dayNumber) + Ptarget;
-  return prob;
+  return P0 * Math.exp(-k * dayNumber) + Ptarget;
 }
 
 export function getNextDrawProbability(P_base, todayLogs) {
   if (!todayLogs || todayLogs.length === 0) return P_base;
-
   const lastDecision = todayLogs[todayLogs.length - 1].decision;
   const factor = lastDecision === 'avoid' ? 0.85 : 0.95;
   const lastProb = todayLogs[todayLogs.length - 1].probability || P_base;
   let nextProb = lastProb * factor;
-
   const minProb = P_base * 0.3;
   if (nextProb < minProb) nextProb = minProb;
-
   return nextProb;
 }
 
 // ==================== 业务工具 ====================
-export function freqToProb(freqPerDay) {
-  if (freqPerDay <= 0) return 0;
-  return 1 - Math.exp(-freqPerDay);
-}
-
 export function normalizeDailyFreq(freq, unit) {
   if (unit === 'week') return freq / 7;
   return freq;
 }
 
-/**
- * 智能建议（已加 · 前缀，推荐天数下限21天）
- */
 export function getSuggestions(currentFreq, targetFreq, targetDays, currentUnit, targetUnit) {
   const dailyCurrent = normalizeDailyFreq(currentFreq, currentUnit);
   const dailyTarget = normalizeDailyFreq(targetFreq, targetUnit);
   const suggestions = [];
-
-  if (targetDays < 21) {
-    suggestions.push('研究表明习惯改变至少需要18-21天，过于激进易失败，建议延长。');
-  }
+  if (targetDays < 21) suggestions.push('研究表明习惯改变至少需要18-21天，过于激进易失败，建议延长。');
   if (dailyCurrent > 0) {
     const reductionRatio = (dailyCurrent - dailyTarget) / dailyCurrent;
-    if (reductionRatio > 0.8) {
-      suggestions.push('降幅过大（>80%），建议拆分为多个阶段性目标。');
-    }
+    if (reductionRatio > 0.8) suggestions.push('降幅过大（>80%），建议拆分为多个阶段性目标。');
   }
-
   const freqDiff = dailyCurrent - dailyTarget;
   const recommendedDays = Math.max(21, Math.round(freqDiff * 10));
-  if (targetDays < recommendedDays) {
-    suggestions.push(`根据降幅建议至少 ${recommendedDays} 天，当前天数可能偏短。`);
-  }
-
-  // 每条前面加上 · 确保视觉分开
+  if (targetDays < recommendedDays) suggestions.push(`根据降幅建议至少 ${recommendedDays} 天，当前天数可能偏短。`);
   return suggestions.map(s => `· ${s}`);
 }
