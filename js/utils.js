@@ -1,4 +1,4 @@
-// utils.js —— 通用工具函数（概率-频率映射说明）
+// utils.js —— 通用工具函数（含每日最大发生次数限制）
 
 // ==================== 本地日期工具 ====================
 function parseLocalDate(dateStr) {
@@ -27,6 +27,9 @@ export function loadData() {
     if (data.settings) {
       data.settings.drawIntervalMinutes = data.settings.drawIntervalMinutes ?? 15;
       data.settings.maxDrawsPerDay = data.settings.maxDrawsPerDay ?? calcDefaultMaxDraws(data.settings.currentFrequency);
+      // 新增：确保 maxOccurrencesPerDay 有默认值
+      data.settings.maxOccurrencesPerDay = data.settings.maxOccurrencesPerDay ??
+        calcDefaultMaxOccurrences(data.settings.currentFrequency, data.settings.targetFrequency);
     }
     return data;
   } catch (e) { return null; }
@@ -114,21 +117,32 @@ function calcDefaultMaxDraws(freq) {
   return Math.max(4, Math.round(freq * 2));
 }
 
+/** 计算每日最大发生次数的默认值（取当前与目标之间的中间值上取整） */
+function calcDefaultMaxOccurrences(currentFreq, targetFreq) {
+  if (!currentFreq) return 3;
+  const mid = Math.ceil((currentFreq + targetFreq) / 2);
+  return Math.min(currentFreq, Math.max(targetFreq, mid));
+}
+
+/** 获取今日已发生次数（决策为 do_habit） */
+export function getTodayOccurrenceCount(data) {
+  const today = getToday();
+  const logs = data.dailyLogs[today] || [];
+  return logs.filter(l => l.decision === 'do_habit').length;
+}
+
+/** 检查是否还可以发生（未达到每日最大发生次数） */
+export function canOccurNow(data) {
+  const count = getTodayOccurrenceCount(data);
+  const max = data.settings.maxOccurrencesPerDay ?? 3;
+  return count < max;
+}
+
 // ==================== 概率与频率的映射 ====================
-/**
- * 频率 → 概率（用于初始化 P0 和抽签）
- * 公式：P = 1 - 1/(freq + 1)，上限0.95
- * 频率越高，单次冲动发生时执行习惯的概率越大
- */
 export function freqToProb(freqPerDay) {
   if (freqPerDay <= 0) return 0;
   return Math.min(0.95, 1 - 1 / (freqPerDay + 1));
 }
-
-/**
- * 图表显示：概率 × 初始每日频率 = 预测每日次数
- * 这个乘法直接在 engine.js 中进行
- */
 
 // ==================== 日内动态概率 ====================
 export function getTodayBaseProbability(settings, dayNumber) {

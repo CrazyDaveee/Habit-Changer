@@ -1,9 +1,10 @@
-// interaction.js —— 每日多次抽签、心情记录（含实时状态）
+// interaction.js —— 每日多次抽签、心情记录（含最大发生次数限制）
 
 import {
   loadData, saveData, getToday,
   canDrawNow, getTodayDrawCount,
-  getTodayBaseProbability, getNextDrawProbability
+  getTodayBaseProbability, getNextDrawProbability,
+  canOccurNow, getTodayOccurrenceCount
 } from './utils.js';
 import { rouletteWheelSelect } from './weight.js';
 import { updateCompanion } from './companion.js';
@@ -18,7 +19,6 @@ export function initInteraction() {
     newDrawBtn.addEventListener('click', handleDraw);
   }
 
-  // 实时更新抽签状态
   updateDrawStatus();
   setInterval(updateDrawStatus, 1000);
 }
@@ -29,10 +29,14 @@ function updateDrawStatus() {
   const canDraw = canDrawNow(data);
   const el = document.getElementById('drawCountDisplay');
   if (!el) return;
+
+  const count = getTodayDrawCount(data);
+  const max = data.settings.maxDrawsPerDay;
+  const occurCount = getTodayOccurrenceCount(data);
+  const occurMax = data.settings.maxOccurrencesPerDay ?? 3;
+
   if (canDraw.allowed) {
-    const count = getTodayDrawCount(data);
-    const max = data.settings.maxDrawsPerDay;
-    el.textContent = `今日已决策 ${count}/${max} 次 · 可抽签`;
+    el.textContent = `今日已决策 ${count}/${max} 次 · 已发生 ${occurCount}/${occurMax} 次 · 可抽签`;
   } else {
     el.textContent = canDraw.reason;
   }
@@ -57,6 +61,44 @@ async function handleDraw() {
     return;
   }
 
+  // ---------- 新增：检查是否已达到每日最大发生次数 ----------
+  if (!canOccurNow(data)) {
+    // 已达上限，强制判定为“避免”
+    const decision = 'avoid';
+    const logEntry = {
+      dayNumber,
+      probability: 0,
+      randomValue: null,
+      decision,
+      substituteChosen: null,
+      substituteName: null,
+      mood: null,
+      note: '',
+      timestamp: new Date().toISOString(),
+      forcedLimit: true,          // 标记为强制避免
+    };
+
+    if (!data.dailyLogs[today]) data.dailyLogs[today] = [];
+    data.dailyLogs[today].push(logEntry);
+    saveData(data);
+
+    // 随机抽取替代行为
+    let subName = null;
+    if (data.substitutes?.items?.length) {
+      const chosen = rouletteWheelSelect(data.substitutes.items);
+      subName = chosen ? chosen.name : null;
+      logEntry.substituteName = subName;
+      logEntry.substituteChosen = chosen ? chosen.id : null;
+      saveData(data);  // 更新替代行为信息
+    }
+
+    updateCompanion(data);
+    displayResult(decision, subName, today);
+    updateDrawStatus();
+    return;
+  }
+
+  // ---------- 正常抽签流程 ----------
   const P_base = getTodayBaseProbability(data.settings, dayNumber);
   const todayLogs = data.dailyLogs[today] || [];
   const P_actual = getNextDrawProbability(P_base, todayLogs);

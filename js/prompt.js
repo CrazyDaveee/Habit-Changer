@@ -1,4 +1,4 @@
-// prompt.js —— AI 曲线生成 Prompt 与 JSON 解析（统一使用 freqToProb）
+// prompt.js —— AI 曲线生成 Prompt 与 JSON 解析（统一 Ptarget 计算）
 
 import { loadData, saveData, normalizeDailyFreq, freqToProb } from './utils.js';
 
@@ -28,7 +28,7 @@ export function generatePrompt() {
     freqTarget = normalizeDailyFreq(targetFreq, targetFreqUnit);
     targetDays = days;
     P0 = freqToProb(freqCurrent);
-    Ptarget = freqToProb(freqTarget);
+    Ptarget = Math.min(0.8, freqTarget / (freqCurrent || 1));
   }
 
   const prompt = `
