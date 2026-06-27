@@ -1,6 +1,6 @@
 //更新
 git add .
-git commit -m "加入AI生成曲线功能"
+git commit -m "加入版权信息"
 git push
 
 //调试模式
