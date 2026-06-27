@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>改变你的坏习惯！</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <script>
+    (function() {
+      const saved = localStorage.getItem('habitChangerConfig');
+      const theme = saved ? JSON.parse(saved).theme : 'auto';
+      if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+  <style>
+    /* 调试面板样式 */
+    #debugPanel {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      border: 1px dashed var(--color-primary);
+      border-radius: 12px;
+      font-size: 0.85rem;
+      background: var(--color-bg);
+      display: none;
+    }
+    #debugPanel .debug-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+    #debugPanel button {
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--color-primary);
+      background: var(--color-surface);
+      color: var(--color-primary);
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app-container">
+    <header class="app-header">
+      <h1 class="app-logo">🌱 习惯改变器</h1>
+      <nav class="header-nav">
+        <button id="settingsBtn" class="icon-btn" title="设置">⚙️</button>
+        <button id="themeToggle" class="icon-btn" title="切换模式">🌓</button>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <!-- Welcome 引导页 -->
+      <section id="viewWelcome" class="view active">
+        <div class="card welcome-container">
+          <div class="welcome-illustration">🎲</div>
+          <div class="welcome-title">用随机化代替意志力</div>
+          <div class="welcome-subtitle">科学减少坏习惯，让改变自然发生</div>
+
+          <div class="feature-list">
+            <div class="feature-item">
+              <span class="feature-icon">📉</span>
+              <span class="feature-text"><strong>渐进式概率曲线</strong><br>基于伦敦大学学院习惯形成模型，习惯触发概率随天数逐渐下降，你可以在图表上看到自己的进步。</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">🎰</span>
+              <span class="feature-text"><strong>每日多次随机决策</strong><br>每次冲动时点一下，让程序帮你决定——而不是消耗意志力。成功避免后，下次概率进一步降低。</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">🌿</span>
+              <span class="feature-text"><strong>虚拟陪伴植物</strong><br>每次成功避免都会为植物增加经验，看着它从种子长成果实，你的坚持有了温暖的见证。</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">📊</span>
+              <span class="feature-text"><strong>28天习惯日历</strong><br>回顾每日决策记录、心情和替代行为，了解哪些策略对你最有效。</span>
+            </div>
+          </div>
+
+          <button id="welcomeStartBtn" class="btn primary" style="font-size:1.1rem; padding: 1rem 2.5rem;">
+            开始设定我的目标 →
+          </button>
+          <p style="margin-top: 0.8rem; font-size:0.8rem; color: var(--color-text-muted);">
+            已有数据？导入备份或直接开始设定（不会覆盖旧数据）
+          </p>
+        </div>
+      </section>
+
+      <!-- 设置向导 -->
+      <section id="viewSetup" class="view">
+        <div class="card setup-card">
+          <h2>第一步：设定你的目标</h2>
+          <form id="setupForm" class="setup-form">
+            <div class="form-group">
+              <label for="habitName">坏习惯名称</label>
+              <input type="text" id="habitName" placeholder="例如：咬指甲、刷短视频..." required />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="currentFreq">当前频率（每天/每周）</label>
+                <input type="number" id="currentFreq" min="1" placeholder="次数" required />
+                <select id="freqUnit">
+                  <option value="day">每天</option>
+                  <option value="week">每周</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="targetFreq">目标频率</label>
+                <input type="number" id="targetFreq" min="0" placeholder="次数" required />
+                <select id="targetFreqUnit">
+                  <option value="day">次/天</option>
+                  <option value="week">次/周</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="targetDays">目标天数</label>
+                <input type="number" id="targetDays" min="1" placeholder="天数" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="drawInterval">每次抽签间隔（分钟）</label>
+                <input type="number" id="drawInterval" value="15" min="5" max="120" step="5" />
+              </div>
+              <div class="form-group">
+                <label for="maxDraws">每日最多抽签次数</label>
+                <input type="number" id="maxDraws" value="10" min="1" max="50" />
+              </div>
+            </div>
+            <div id="suggestionBubble" class="bubble warning" hidden></div>
+            <button type="submit" class="btn primary">生成我的改变曲线 →</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- 替代行为 -->
+      <section id="viewSubstitutes" class="view">
+        <div class="card">
+          <h2>第二步：选择替代行为</h2>
+          <p class="subtitle">当你决定“不做”坏习惯时，随机抽选一个替代行为。</p>
+          <div class="add-custom">
+            <input type="text" id="customSub" placeholder="自定义替代行为..." />
+            <button id="addSubBtn" class="btn secondary">+ 添加</button>
+          </div>
+          <!-- 滑块引导文字 -->
+          <p style="color: var(--color-text-muted); font-size: 0.9rem; text-align: center; margin: 1rem 0 0.5rem 0;">
+            💡 拖动下方滑块调整每个替代行为被选中的概率，总和保持 100%
+          </p>
+          <div id="weightSliders" class="weight-sliders"></div>
+          <button id="confirmSubsBtn" class="btn primary">确认，进入主界面 →</button>
+        </div>
+      </section>
+
+      <!-- 主界面 -->
+      <section id="viewMain" class="view">
+        <div class="progress-area">
+          <div class="progress-stats">
+            <span id="dayCounter">Day 1 / 90</span>
+            <span id="successRate">完成度: --%</span>
+          </div>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill" style="width:1%"></div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="probChart"></canvas>
+        </div>
+
+        <div class="action-center">
+          <button id="drawBtn" class="draw-btn">🎲 抽取今日决定</button>
+          <div id="drawAnimation" class="draw-animation" hidden>🎰</div>
+          <div id="drawCountDisplay" style="font-size:0.8rem; color:var(--color-text-muted); margin-top:0.5rem;">今日已决策 0/0 次</div>
+        </div>
+
+        <div id="resultArea" class="result-area" hidden>
+          <div id="resultText" class="result-text"></div>
+          <div id="substituteDisplay" class="substitute-display" hidden></div>
+        </div>
+
+        <div class="companion-container">
+          <div id="plantVisual" class="plant-stage">🌱</div>
+          <div id="plantDialogue" class="dialogue-bubble">今天也要加油哦~</div>
+          <div class="companion-exp">
+            好感度: <span id="expValue">0</span>
+            <span id="expHelpIcon" class="help-icon" title="好感度规则">❓</span>
+          </div>
+        </div>
+
+        <!-- 调试面板 -->
+        <div id="debugPanel">
+          <div><strong>🛠️ 调试模式</strong></div>
+          <div id="debugCurrentDate">📅 虚拟日期：</div>
+          <div class="debug-buttons">
+            <button id="debugAdvanceDay">⏩ 前进一天</button>
+            <button id="debugResetToday">🔄 重置今日抽签</button>
+            <button id="debugResetAll">🗑️ 重置所有数据</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 数据看板 -->
+      <section id="viewDashboard" class="view">
+        <h2>📊 数据看板</h2>
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3>📅 习惯日历（近28天）</h3>
+            <div id="habitCalendar"></div>
+            <p style="font-size:0.75rem; color:var(--color-text-muted); text-align:center; margin-top:0.5rem;">📱 横屏以获得日历最佳视图</p>
+          </div>
+          <div class="card">
+            <h3>替代行为分布</h3>
+            <canvas id="subsPieChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <div id="modalOverlay" class="modal-overlay" hidden>
+        <div id="modalContent" class="modal-card"></div>
+      </div>
+    </main>
+
+    <footer class="bottom-nav">
+      <button class="nav-btn active" data-view="viewMain">🏠 主页</button>
+      <button class="nav-btn" data-view="viewDashboard">📈 看板</button>
+      <button class="nav-btn" data-view="viewSubstitutes">🔧 替代</button>
+    </footer>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
