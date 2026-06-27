@@ -1,4 +1,4 @@
-// prompt.js —— AI 曲线生成 Prompt 与 JSON 解析（统一 Ptarget 计算）
+// prompt.js —— AI 曲线生成 Prompt 与 JSON 解析（统一 Ptarget 比例计算）
 
 import { loadData, saveData, normalizeDailyFreq, freqToProb } from './utils.js';
 

@@ -61,9 +61,8 @@ async function handleDraw() {
     return;
   }
 
-  // ---------- 新增：检查是否已达到每日最大发生次数 ----------
+  // ---------- 检查是否已达到每日最大发生次数 ----------
   if (!canOccurNow(data)) {
-    // 已达上限，强制判定为“避免”
     const decision = 'avoid';
     const logEntry = {
       dayNumber,
@@ -75,22 +74,20 @@ async function handleDraw() {
       mood: null,
       note: '',
       timestamp: new Date().toISOString(),
-      forcedLimit: true,          // 标记为强制避免
+      forcedLimit: true,
     };
 
     if (!data.dailyLogs[today]) data.dailyLogs[today] = [];
     data.dailyLogs[today].push(logEntry);
-    saveData(data);
 
-    // 随机抽取替代行为
     let subName = null;
     if (data.substitutes?.items?.length) {
       const chosen = rouletteWheelSelect(data.substitutes.items);
       subName = chosen ? chosen.name : null;
       logEntry.substituteName = subName;
       logEntry.substituteChosen = chosen ? chosen.id : null;
-      saveData(data);  // 更新替代行为信息
     }
+    saveData(data);
 
     updateCompanion(data);
     displayResult(decision, subName, today);
@@ -98,7 +95,7 @@ async function handleDraw() {
     return;
   }
 
-  // ---------- 正常抽签流程 ----------
+  // ---------- 正常抽签 ----------
   const P_base = getTodayBaseProbability(data.settings, dayNumber);
   const todayLogs = data.dailyLogs[today] || [];
   const P_actual = getNextDrawProbability(P_base, todayLogs);

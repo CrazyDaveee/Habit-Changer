@@ -3,7 +3,7 @@
 import {
   loadData, saveData, loadConfig, saveConfig,
   getSuggestions, normalizeDailyFreq, getToday, isDebug, advanceVirtualDate,
-  getTodayDrawCount, freqToProb
+  getTodayDrawCount, freqToProb, calcDefaultMaxOccurrences
 } from './utils.js';
 import { calcDecayRate, renderProbabilityChart, renderCustomCurveChart } from './engine.js';
 import { createDefaultSubstitutePool, redistributeWeights, createCustomSubstitute } from './weight.js';
@@ -207,7 +207,7 @@ function handleSetupSubmit(e) {
     probCurve: { P0, Ptarget, k, totalDays },
     drawIntervalMinutes: drawInterval,
     maxDrawsPerDay: maxDraws,
-    maxOccurrencesPerDay: Math.max(dailyTarget, Math.min(dailyCurrent, Math.ceil((dailyCurrent + dailyTarget) / 2))),
+    maxOccurrencesPerDay: calcDefaultMaxOccurrences(dailyCurrent, P0),
     suggestionShown: true,
   };
 
@@ -445,7 +445,7 @@ function showExpHelp() {
         <li>🌸 开花 (301-500)</li>
         <li>🍎 结果 (500+)</li>
       </ul>
-      <p style="font-size:0.9rem; color:var(--color-text-muted);">每天可多次决策，每次成功都在滋养改变~</p>
+      <p style="font-size:0.9rem; color:var(--color-text-muted);">每天可多次决策，达到每日最多发生次数后将自动避免。</p>
     </div>
   `;
   overlay.hidden = false;
