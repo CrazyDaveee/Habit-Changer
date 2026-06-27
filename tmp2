@@ -1,6 +1,6 @@
 //更新
 git add .
-git commit -m "添加单日允许次数限制_v3_图表映射决定"
+git commit -m "添加单日允许次数限制_v3.0.1"
 git push
 
 //调试模式
