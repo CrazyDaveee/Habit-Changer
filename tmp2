@@ -1,0 +1,10 @@
+//更新
+git add .
+git commit -m "加入AI生成曲线功能"
+git push
+
+//调试模式
+?debug=true
+
+//启动服务
+npx serve . --listen tcp://0.0.0.0:3000#

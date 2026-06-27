@@ -1,4 +1,4 @@
-// app.js —— 应用入口，路由与全局初始化（实时智能建议）
+// app.js —— 应用入口，路由与全局初始化（含 Welcome 引导、AI 曲线选项）
 
 import {
   loadData, saveData, loadConfig, saveConfig,
@@ -43,7 +43,12 @@ function initApp() {
   document.getElementById('settingsBtn')?.addEventListener('click', showSettingsModal);
   document.getElementById('expHelpIcon')?.addEventListener('click', showExpHelp);
 
-  // ---------- 实时智能建议 ----------
+  // ---------- 设置向导中的 AI 曲线按钮 ----------
+  document.getElementById('aiCurveSetupBtn')?.addEventListener('click', () => {
+    generatePrompt();
+  });
+
+  // 实时智能建议
   const form = document.getElementById('setupForm');
   if (form) {
     const fields = ['currentFreq', 'freqUnit', 'targetFreq', 'targetFreqUnit', 'targetDays'];
@@ -51,13 +56,11 @@ function initApp() {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', updateSetupSuggestions);
     });
-    // 单位选择改变时也要更新
     const selectors = ['freqUnit', 'targetFreqUnit'];
     selectors.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('change', updateSetupSuggestions);
     });
-    // 初始检查（可能已有默认值）
     updateSetupSuggestions();
   }
 
@@ -67,7 +70,6 @@ function initApp() {
   });
 }
 
-// 实时读取表单并更新气泡
 function updateSetupSuggestions() {
   const currentFreq = parseInt(document.getElementById('currentFreq').value);
   const freqUnit = document.getElementById('freqUnit').value;
@@ -77,7 +79,6 @@ function updateSetupSuggestions() {
   const bubble = document.getElementById('suggestionBubble');
 
   if (isNaN(currentFreq) || isNaN(targetFreq) || isNaN(targetDays)) {
-    // 输入不完整时不显示气泡
     if (bubble) bubble.hidden = true;
     return;
   }
@@ -187,7 +188,6 @@ function handleSetupSubmit(e) {
     return;
   }
 
-  // 再次确认建议（提交时也可以再看一次，但此时气泡已经实时显示了，可省略）
   const dailyCurrent = normalizeDailyFreq(currentFreq, freqUnit);
   const dailyTarget = normalizeDailyFreq(targetFreq, targetFreqUnit);
   const P0 = Math.min(0.95, 1 - 1 / (dailyCurrent + 1));
@@ -355,8 +355,6 @@ function showSettingsModal() {
     <button id="exportBtn" class="btn secondary">导出数据</button>
     <button id="importBtn" class="btn secondary">导入数据</button>
     <input type="file" id="importFile" accept=".json" hidden />
-    <hr style="margin:12px 0" />
-    <button id="aiCurveBtn" class="btn secondary">🤖 使用 AI 生成个性化曲线</button>
   `;
   overlay.hidden = false;
 
@@ -380,10 +378,6 @@ function showSettingsModal() {
   document.getElementById('exportBtn').addEventListener('click', exportData);
   document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
   document.getElementById('importFile').addEventListener('change', importData);
-  document.getElementById('aiCurveBtn').addEventListener('click', () => {
-    overlay.hidden = true;
-    generatePrompt();
-  });
 }
 
 function exportData() {
@@ -434,7 +428,7 @@ function showExpHelp() {
       <ul>
         <li>🌱 种子 (0-50)</li>
         <li>🌿 发芽 (51-150)</li>
-        <li>🪴 幼苗 (151-300)</li>
+        <li>🌲 幼苗 (151-300)</li>
         <li>🌸 开花 (301-500)</li>
         <li>🍎 结果 (500+)</li>
       </ul>
