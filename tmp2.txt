@@ -1,6 +1,6 @@
 //更新
 git add .
-git commit -m "修复几处错误"
+git commit -m "更正项目名"
 git push
 
 //调试模式
