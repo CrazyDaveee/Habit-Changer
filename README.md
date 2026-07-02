@@ -35,7 +35,7 @@
 ### 1. 运行项目
 
 本页面已经托管到Github
-https://crazydaveee.github.io/Haibit-Changer/
+https://crazydaveee.github.io/Habit-Changer/
 
 因为使用了 ES6 模块，若本地运行需通过**本地服务器**打开（不能直接双击 `index.html`）。
 

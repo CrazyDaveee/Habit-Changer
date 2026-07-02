@@ -1,6 +1,6 @@
 //更新
 git add .
-git commit -m "部署"
+git commit -m "更新项目名"
 git push
 
 //调试模式
