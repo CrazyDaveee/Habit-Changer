@@ -4,14 +4,14 @@
  * 预设替代行为分类与默认项
  */
 export const presetSubstitutes = [
-  { name: '深蹲10次', category: '身体类' },
-  { name: '拉伸一分钟', category: '身体类' },
+  { name: '深蹲10次', category: '运动类' },
+  { name: '拉伸一分钟', category: '运动类' },
   { name: '嚼口香糖', category: '感官类' },
   { name: '闻薄荷精油', category: '感官类' },
+  { name: '看一张风景图', category: '感官类' },
+  { name: '吃一块黑巧克力', category: '感官类' },
   { name: '背5个单词', category: '认知类' },
   { name: '做一道算术题', category: '认知类' },
-  { name: '看一张风景图', category: '奖赏类' },
-  { name: '吃一块黑巧克力', category: '奖赏类' },
 ];
 
 /**
